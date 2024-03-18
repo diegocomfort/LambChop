@@ -156,7 +156,7 @@ struct lambda *compile_lambda(char *source_file)
     }
     else if (pid == CHILD_PID)
     {
-	execl("/usr/bin/cc", "cc", "-o", shared_object_name, "-fPIC", "-shared", "-g", source_file, NULL);
+	execl("/usr/bin/cc", "cc", "-o", shared_object_name, "-fPIC", "-shared", source_file, NULL);
 	exit(127); // on error, exit
 	// TODO: Do I return NULL? Do I free() do I exit()?
     }
