@@ -1,11 +1,12 @@
 #include <stdio.h>
 
-void print_id(void)
+struct captures
 {
-    struct captures
-    {
-        int id;
-    };
+    int id;
+};
+
+void function(void)
+{
     static struct captures captures = {
         $@
     };
