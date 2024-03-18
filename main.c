@@ -128,6 +128,7 @@ char *create_lambda_source_code(struct captures captures)
     if (write_size < final_source_code_length)
     {
 	fprintf(stderr, "Failed to write source code to file: %s\n", strerror(errno));
+	remove(file_name);
         return NULL;
     }
 
@@ -155,7 +156,7 @@ struct lambda *compile_lambda(char *source_file)
     }
     else if (pid == CHILD_PID)
     {
-	int error = execl("/usr/bin/cc", "cc", "-o", shared_object_name, "-fPIC", "-shared", "-g", source_file, NULL);
+	execl("/usr/bin/cc", "cc", "-o", shared_object_name, "-fPIC", "-shared", "-g", source_file, NULL);
 	exit(127); // on error, exit
 	// TODO: Do I return NULL? Do I free() do I exit()?
     }
@@ -180,6 +181,7 @@ struct lambda *compile_lambda(char *source_file)
     lambda->shared_object = NULL;
     lambda->function = NULL;
     remove(source_file);
+    ++lambdas_generated;
 
     return lambda;
 }
@@ -245,7 +247,7 @@ char *read_entire_file(char *file_path, size_t *length)
     }
     
     *length = 0;
-    FILE *file = fopen(file_path, "r");
+    FILE *file = fopen(file_path, "rb");
     if (file == NULL)
     {
 	fprintf(stderr, "Failed to open %s: %s\n", file_path, strerror(errno));
@@ -278,7 +280,7 @@ char *find_substring(char *text, char *substring)
 	return NULL;
     }
     
-    for (; *text; ++text)
+    for (; *text != '\0'; ++text)
     {
 	if (*text != *substring)
 	    continue;
@@ -288,9 +290,7 @@ char *find_substring(char *text, char *substring)
 	/*     return text; */
 	/* } */
 
-	// My own string comparison optimzed for substring finding. It
-	// guarantees that `find_substring` runs in O(n) time where `n`
-	// is the length of `text`
+	// My own string comparison
 	char *start_of_match = text;
 	for (size_t i = 0; ; ++text, ++i)
 	{
@@ -303,6 +303,5 @@ char *find_substring(char *text, char *substring)
 	}
     }
 
-    fprintf(stderr, "Failed to a substring\n");
     return NULL;
 }
