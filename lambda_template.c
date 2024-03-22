@@ -1,15 +1,17 @@
 #include <stdio.h>
 
-struct captures
+struct capture_group
 {
     int id;
+    char *name;
 };
 
-void function(void)
+void print_info(void)
 {
-    static struct captures captures = {
+    static struct capture_group captures = {
         $@
     };
     
     printf("My id is %d\n", captures.id);
+    printf("My name is %s\n", captures.name);
 }

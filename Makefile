@@ -1,9 +1,12 @@
-W = -Wall -Wextra -Werror
+W = -Wall -Wextra -Werror #-fsanitize=leak -ggdb
 
 all: main
 
 main: main.c
-	gcc -o main main.c $(W) -ggdb3
+	gcc -o main main.c $(W)
 
 clean:
-	rm liblambda*.so
+	rm main
+
+reset: clean main
+

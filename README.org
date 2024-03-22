@@ -1,0 +1,25 @@
+#+title: LambChop - Create Funcions (Lambdas) at Runtime in C
+#+author: Diego Comfort
+
+* About
+Lambda is a little project I did for fun to
+1) try and make functions at runtime
+2) learn more about some fun functions like fork() and
+3) learn to learn from man pages
+
+It is a header-only "library" that is purely for fun and probably
+shouldn't be used seriously, but if you want to, be my guest.
+
+* Installation
+You Don't need to! Just define ~LAMBCHOP_IMPLEMENTATION~ and include
+the header file
+#+begin_src shell
+git clone https://github.com/diegocomfort/Lambda.git
+cd LambChop/
+#+end_src
+
+* Usage
+** Learn it youself
+See ~main.c~ for an example. Good luck!
+
+** TODO Baby Steps
