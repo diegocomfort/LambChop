@@ -1,7 +1,8 @@
 #ifndef LAMBDA_H
 #define LAMBDA_H
 
-#include <stdio.h>  /* fprintf(), asprintf(), fopen(), fclose(), fread(), fwrite(), stderr */
+#include <stdio.h>  /* fprintf(), asprintf(), fopen(), fclose(), fread(),
+		     * fwrite(), stderr */
 #include <stdlib.h> /* malloc(), free() */
 #include <unistd.h> /* fork(), execl() */
 #include <sys/wait.h> /* waitpid() */
@@ -11,9 +12,10 @@
 
 struct lambda_group
 {
-	char *(*create_capture_intializer)(void *captures); // struct {int x, y;} var = { .x = 1, .y = -1 };
+	// struct {int x, y;} var = { .x = 1, .y = -1 };
 	//                            ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
 	// It should allocate a string which is freed by the caller
+	char *(*create_capture_intializer)(void *captures);
 	char *template_file;    // NULL => defaults to "lambda_template.c"
 	char *function_name;    // NULL => defaults to "function"
 };
@@ -30,7 +32,8 @@ struct lambda *create_lambda(struct lambda_group lambda_type, void *captures);
 void free_lambda(struct lambda *lambda);
 
 // Lambda-specific functions
-char *create_lambda_source_code(struct lambda_group lambda_type, void *captures);
+char *create_lambda_source_code(struct lambda_group lambda_type,
+				void *captures);
 struct lambda *compile_lambda(char *source_file);
 int open_lambda(struct lambda *lambda, struct lambda_group lambda_type);
 
@@ -50,13 +53,16 @@ struct lambda *create_lambda(struct lambda_group lambda_type, void *captures)
 {
 	if (captures == NULL)
 	{
-		fprintf(stderr, "Argument \'captures\' is NULL in \'create_lambda()\'\n");
+		fprintf(stderr, "Argument \'captures\' is NULL in"
+			" \'create_lambda()\'\n");
 		return NULL;
 	}
 
 	if (lambda_type.create_capture_intializer == NULL)
 	{
-		fprintf(stderr, "Argument \'lambda_type\' has NULL feild \'create_capture_intializer\' in \'create_lambda()\'\n");
+		fprintf(stderr, "Argument \'lambda_type\' has NULL"
+			" feild \'create_capture_intializer\'"
+			" in \'create_lambda()\'\n");
 		return NULL;
 	}
 	if (lambda_type.template_file == NULL)
@@ -67,11 +73,12 @@ struct lambda *create_lambda(struct lambda_group lambda_type, void *captures)
 	{
 		lambda_type.function_name = "function";
 	}
-    
+
 	char *source_file = create_lambda_source_code(lambda_type, captures);
 	if (source_file == NULL)
 	{
-		fprintf(stderr, "Failed to create a file with the lambda source code\n");
+		fprintf(stderr, "Failed to create a file with the"
+			" lambda source code\n");
 		return NULL;
 	}
 
@@ -85,11 +92,12 @@ struct lambda *create_lambda(struct lambda_group lambda_type, void *captures)
 	int error = open_lambda(lambda, lambda_type);
 	if (error)
 	{
-		fprintf(stderr, "Failed to open the shared object with the lambda\n");
+		fprintf(stderr, "Failed to open the shared object"
+			" with the lambda\n");
 		free(lambda);
 		return NULL;
 	}
-    
+
 	return lambda;
 }
 
@@ -97,13 +105,16 @@ char *create_lambda_source_code(struct lambda_group lambda_type, void *captures)
 {
 	if (captures == NULL)
 	{
-		fprintf(stderr, "Argument \'captures\' is NULL in \'create_lambda_source_code()\'\n");
+		fprintf(stderr, "Argument \'captures\' is NULL in"
+			" \'create_lambda_source_code()\'\n");
 		return NULL;
 	}
 
 	if (lambda_type.create_capture_intializer == NULL)
 	{
-		fprintf(stderr, "Argument \'lambda_type\' has NULL feild \'create_capture_intializer\' in \'create_lambda_source_code()\'\n");
+		fprintf(stderr, "Argument \'lambda_type\' has NULL"
+			" feild \'create_capture_intializer\' in"
+			" \'create_lambda_source_code()\'\n");
 		return NULL;
 	}
 
@@ -113,34 +124,42 @@ char *create_lambda_source_code(struct lambda_group lambda_type, void *captures)
 	}
 
 	size_t source_code_length;
-	char *source_code = read_entire_file(lambda_type.template_file, &source_code_length);
+	char *source_code = read_entire_file(lambda_type.template_file,
+					     &source_code_length);
 	if (source_code == NULL)
 	{
-		fprintf(stderr, "Failed to read entire file: %s\n", lambda_type.template_file);
+		fprintf(stderr, "Failed to read entire file: %s\n",
+			lambda_type.template_file);
 		return NULL;
 	}
 
 	char *code_after_captures = find_substring(source_code, "$@");
 	if (code_after_captures == NULL)
 	{
-		fprintf(stderr, "Failed to find substring \"$@\" in lambda code: %s\n", source_code);
+		fprintf(stderr, "Failed to find substring \"$@\" "
+			"in lambda code: %s\n", source_code);
 		free(source_code);
 		return NULL;
 	}
-	*code_after_captures = '\0'; // Replaces '$' with '\0' to make `source_code` null-terminated
-	code_after_captures += 2;    // Moves pointer to the character after '@' which is the rest of the code
+	*code_after_captures = '\0'; // Replaces '$' with '\0' to make
+				     // `source_code` null-terminated
+	code_after_captures += 2;    // Moves pointer to the character after '@'
+				     // which is the rest of the code
 
 	char *final_source_code = NULL;
-	char *capture_initializer = lambda_type.create_capture_intializer(captures);
+	char *capture_initializer =
+		lambda_type.create_capture_intializer(captures);
 	if (capture_initializer == NULL)
 	{
 		free(source_code);
-		fprintf(stderr, "Failed to create capture initializer string\n");
+		fprintf(stderr, "Failed to create capture"
+			" initializer string\n");
 		return NULL;
 	}
 	int bytes_written = asprintf(&final_source_code,
 				     "%s%s%s",
-				     source_code, capture_initializer, code_after_captures);
+				     source_code, capture_initializer,
+				     code_after_captures);
 	free(capture_initializer);
 	free(source_code);
 	if (bytes_written <= 0)
@@ -153,17 +172,20 @@ char *create_lambda_source_code(struct lambda_group lambda_type, void *captures)
 	FILE *temp_file = fopen(TMP_C_FILE, "w");
 	if (temp_file == NULL)
 	{
-		fprintf(stderr, "Failed to open file %s: %s\n", TMP_C_FILE, strerror(errno));
+		fprintf(stderr, "Failed to open file %s: %s\n",
+			TMP_C_FILE, strerror(errno));
 		free(final_source_code);
 		return NULL;
 	}
 
-	size_t write_size = fwrite(final_source_code, sizeof(char), final_source_code_length, temp_file);
+	size_t write_size = fwrite(final_source_code, sizeof(char),
+				   final_source_code_length, temp_file);
 	free(final_source_code);
 	fclose(temp_file);
 	if (write_size < final_source_code_length)
 	{
-		fprintf(stderr, "Failed to write source code to file: %s\n", strerror(errno));
+		fprintf(stderr, "Failed to write source code to file: %s\n",
+			strerror(errno));
 		remove(TMP_C_FILE);
 		return NULL;
 	}
@@ -174,18 +196,22 @@ char *create_lambda_source_code(struct lambda_group lambda_type, void *captures)
 struct lambda *compile_lambda(char *source_file)
 {
 	static int lambdas_generated = 0;
-    
+
 	if (source_file == NULL)
 	{
-		fprintf(stderr, "Argument \'source_file\' is NULL in \'compile_lambda()\'\n");
+		fprintf(stderr, "Argument \'source_file\' is NULL"
+			" in \'compile_lambda()\'\n");
 		return NULL;
 	}
-    
+
 	char *shared_object_name = NULL;
-	int bytes_written = asprintf(&shared_object_name, "/tmp/liblambda%d.so", lambdas_generated);
+	int bytes_written = asprintf(&shared_object_name,
+				     "/tmp/liblambda%d.so",
+				     lambdas_generated);
 	if (bytes_written <= 0)
 	{
-		fprintf(stderr, "Failed to format a name for the shared object\n");
+		fprintf(stderr, "Failed to format a name for"
+			" the shared object\n");
 		return NULL;
 	}
 
@@ -198,7 +224,8 @@ struct lambda *compile_lambda(char *source_file)
 	}
 	else if (pid == CHILD_PID)
 	{
-		execl("/usr/bin/cc", "cc", "-o", shared_object_name, "-fPIC", "-shared", source_file, NULL);
+		execl("/usr/bin/cc", "cc", "-o", shared_object_name,
+		      "-fPIC", "-shared", source_file, NULL);
 		exit(127); // on error, exit
 		// TODO: Do I return NULL? Do I free() do I exit()?
 	}
@@ -206,15 +233,17 @@ struct lambda *compile_lambda(char *source_file)
 	pid_t child_pid = wait(NULL);
 	if (child_pid == -1)
 	{
-		fprintf(stderr, "Failed to wait for child to terminate: %s\n", strerror(errno));
+		fprintf(stderr, "Failed to wait for child to terminate: %s\n",
+			strerror(errno));
 		free(shared_object_name);
 		return NULL;
 	}
-    
+
 	struct lambda *lambda = malloc(sizeof(struct lambda));
 	if (lambda == NULL)
 	{
-		fprintf(stderr, "Failed to allocate a lambda structure: %s\n", strerror(errno));
+		fprintf(stderr, "Failed to allocate a lambda structure: %s\n",
+			strerror(errno));
 		free(shared_object_name);
 		return NULL;
 	}
@@ -235,13 +264,16 @@ int open_lambda(struct lambda *lambda, struct lambda_group lambda_type)
 	    lambda->shared_object != NULL ||
 	    lambda->function != NULL)
 	{
-		fprintf(stderr, "Argument \'lambda\' in \'open_lambda\' is NULL or has invalid members\n");
+		fprintf(stderr, "Argument \'lambda\' in \'open_lambda\'"
+			" is NULL or has invalid members\n");
 		return 1;
 	}
 
 	if (lambda_type.create_capture_intializer == NULL)
 	{
-		fprintf(stderr, "Argument \'lambda_type\' has NULL feild \'create_capture_intializer\' in \'create_lambda_source_code()\'\n");
+		fprintf(stderr, "Argument \'lambda_type\' has NULL feild"
+			" \'create_capture_intializer\' in"
+			" \'create_lambda_source_code()\'\n");
 		return 2;
 	}
 
@@ -249,22 +281,24 @@ int open_lambda(struct lambda *lambda, struct lambda_group lambda_type)
 	{
 		lambda_type.function_name = "function";
 	}
-    
+
 	lambda->shared_object = dlopen(lambda->object_file, RTLD_NOW);
 	if (lambda->shared_object == NULL)
 	{
-		fprintf(stderr, "Failed to open lambda shared object: %s\n", dlerror());
+		fprintf(stderr, "Failed to open lambda shared object: %s\n",
+			dlerror());
 		return 3;
 	}
 
-	lambda->function = dlsym(lambda->shared_object, lambda_type.function_name);
+	lambda->function = dlsym(lambda->shared_object,
+				 lambda_type.function_name);
 	if (lambda->function == NULL)
 	{
 		fprintf(stderr, "Failed to simulate lambda: %s\n", dlerror());
 		dlclose(lambda->shared_object);
 		return 4;
 	}
-    
+
 	return 0;
 }
 
@@ -293,15 +327,17 @@ char *read_entire_file(char *file_path, size_t *length)
 {
 	if (file_path == NULL || length == NULL)
 	{
-		fprintf(stderr, "Argument \'file_path\' or \'length\' is NULL in \'read_entire_file\'\n");
+		fprintf(stderr, "Argument \'file_path\' or \'length\' is"
+			" NULL in \'read_entire_file\'\n");
 		return NULL;
 	}
-    
+
 	*length = 0;
 	FILE *file = fopen(file_path, "rb");
 	if (file == NULL)
 	{
-		fprintf(stderr, "Failed to open %s: %s\n", file_path, strerror(errno));
+		fprintf(stderr, "Failed to open %s: %s\n",
+			file_path, strerror(errno));
 		return NULL;
 	}
 
@@ -311,11 +347,12 @@ char *read_entire_file(char *file_path, size_t *length)
 	char *buffer = malloc(*length + 1);
 	if (buffer == NULL)
 	{
-		fprintf(stderr, "Failed to allocate space for a buffer of size %lu: %s\n", (*length + 1), strerror(errno));
+		fprintf(stderr, "Failed to allocate space for a buffer"
+			" of size %lu: %s\n", (*length + 1), strerror(errno));
 		fclose(file);
 		return NULL;
 	}
-    
+
 	fread(buffer, sizeof(char), *length, file);
 	buffer[*length] = '\0';
 	fclose(file);
@@ -327,10 +364,11 @@ char *find_substring(char *text, char *substring)
 {
 	if (text == NULL || substring == NULL)
 	{
-		fprintf(stderr, "Argument \'text\' or \'substring\' is NULL in \'find_substring\'\n");
+		fprintf(stderr, "Argument \'text\' or \'substring\' is"
+			" NULL in \'find_substring\'\n");
 		return NULL;
 	}
-    
+
 	for (; *text != '\0'; ++text)
 	{
 		if (*text != *substring)
