@@ -2,7 +2,7 @@
 #define LAMBDA_H
 
 #include <stdio.h>  /* fprintf(), asprintf(), fopen(), fclose(), fread(),
-		     * fwrite(), stderr */
+		     * fwrite(), stderr, remove(), ftell(), fseek() */
 #include <stdlib.h> /* malloc(), free() */
 #include <unistd.h> /* fork(), execl() */
 #include <sys/wait.h> /* waitpid() */
@@ -17,14 +17,15 @@ struct lambda_group
 	// It should allocate a string which is freed by the caller
 	char *(*create_capture_intializer)(void *captures);
 	char *template_file;    // NULL => defaults to "lambda_template.c"
-	char *function_name;    // NULL => defaults to "function"
+	char *function_name;    // NULL => defaults to "function" (needed for
+				// dlsym())
 };
 
 struct lambda
 {
-	char *object_file;	      // gcc output
-	void *shared_object;      // = dlopen(object_file, RTLD_NOW)
-	void *function;	      // = dlsym(shared_object, function_name)
+	char *object_file_name;	// gcc output
+	void *shared_object;	// = dlopen(object_file_name, RTLD_NOW)
+	void *function;	// = dlsym(shared_object, function_name)
 };
 
 // Used by user
@@ -248,7 +249,7 @@ struct lambda *compile_lambda(char *source_file)
 		return NULL;
 	}
 
-	lambda->object_file = shared_object_name;
+	lambda->object_file_name = shared_object_name;
 	lambda->shared_object = NULL;
 	lambda->function = NULL;
 	remove(source_file);
@@ -260,7 +261,7 @@ struct lambda *compile_lambda(char *source_file)
 int open_lambda(struct lambda *lambda, struct lambda_group lambda_type)
 {
 	if (lambda == NULL ||
-	    lambda->object_file == NULL ||
+	    lambda->object_file_name == NULL ||
 	    lambda->shared_object != NULL ||
 	    lambda->function != NULL)
 	{
@@ -282,7 +283,7 @@ int open_lambda(struct lambda *lambda, struct lambda_group lambda_type)
 		lambda_type.function_name = "function";
 	}
 
-	lambda->shared_object = dlopen(lambda->object_file, RTLD_NOW);
+	lambda->shared_object = dlopen(lambda->object_file_name, RTLD_NOW);
 	if (lambda->shared_object == NULL)
 	{
 		fprintf(stderr, "Failed to open lambda shared object: %s\n",
@@ -309,10 +310,10 @@ void free_lambda(struct lambda *lambda)
 		return;
 	}
 
-	if (lambda->object_file != NULL)
+	if (lambda->object_file_name != NULL)
 	{
-		remove(lambda->object_file);
-		free(lambda->object_file);
+		remove(lambda->object_file_name);
+		free(lambda->object_file_name);
 	}
 
 	if (lambda->shared_object != NULL)
