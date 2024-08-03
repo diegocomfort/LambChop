@@ -382,14 +382,12 @@ char *find_substring(char *text, char *substring)
 
 		// My own string comparison
 		char *start_of_match = text;
-		for (size_t i = 0; ; ++text, ++i)
+		for (size_t i = 0; ; ++i)
 		{
 			if (substring[i] == '\0')
 				return start_of_match;
-			if (*text != substring[i])
+			if (text[i] != substring[i])
 				break;
-			if (*text == '\0')
-				return NULL;
 		}
 	}
 
