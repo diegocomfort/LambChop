@@ -7,7 +7,7 @@
 #include <unistd.h> /* fork(), execl() */
 #include <sys/wait.h> /* waitpid() */
 #include <dlfcn.h>  /* dlopen(), dlclode(), dlerror(), dlsym()*/
-#include <string.h> /* strlen(), strerror() */
+#include <string.h> /* strlen(), strerror(), strstr() */
 #include <errno.h>  /* errno */
 
 struct lambda_group
@@ -40,7 +40,6 @@ int open_lambda(struct lambda *lambda, struct lambda_group lambda_type);
 
 // General functions I did myself
 char *read_entire_file(char *file_path, size_t *length);
-char *find_substring(char *text, char *substring);
 
 #endif // LAMBDA_H
 
@@ -134,7 +133,7 @@ char *create_lambda_source_code(struct lambda_group lambda_type, void *captures)
 		return NULL;
 	}
 
-	char *code_after_captures = find_substring(source_code, "$@");
+	char *code_after_captures = strstr(source_code, "$@");
 	if (code_after_captures == NULL)
 	{
 		fprintf(stderr, "Failed to find substring \"$@\" "
@@ -143,7 +142,8 @@ char *create_lambda_source_code(struct lambda_group lambda_type, void *captures)
 		return NULL;
 	}
 	*code_after_captures = '\0'; // Replaces '$' with '\0' to make
-				     // `source_code` null-terminated
+				     // `source_code` null-terminated at the
+				     // insert point, splitting the string
 	code_after_captures += 2;    // Moves pointer to the character after '@'
 				     // which is the rest of the code
 
@@ -359,39 +359,6 @@ char *read_entire_file(char *file_path, size_t *length)
 	fclose(file);
 
 	return buffer;
-}
-
-char *find_substring(char *text, char *substring)
-{
-	if (text == NULL || substring == NULL)
-	{
-		fprintf(stderr, "Argument \'text\' or \'substring\' is"
-			" NULL in \'find_substring\'\n");
-		return NULL;
-	}
-
-	for (; *text != '\0'; ++text)
-	{
-		if (*text != *substring)
-			continue;
-
-		/* if (strcmp(text, substring) == 0) */
-		/* { */
-		/*     return text; */
-		/* } */
-
-		// My own string comparison
-		char *start_of_match = text;
-		for (size_t i = 0; ; ++i)
-		{
-			if (substring[i] == '\0')
-				return start_of_match;
-			if (text[i] != substring[i])
-				break;
-		}
-	}
-
-	return NULL;
 }
 
 #undef LAMBCHOP_IMPLEMENTATION
